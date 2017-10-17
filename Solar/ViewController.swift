@@ -15,7 +15,6 @@ class ViewController: UIViewController {
     @IBOutlet weak var labelLoaded: UILabel!
     @IBOutlet weak var labelSummary: UILabel!
     @IBOutlet weak var labelNet: UILabel! // label displaying value
-    @IBOutlet weak var labelNetUsage: UIButton! // label labeling value
     @IBOutlet weak var buttonRefresh: UIButton!
     
     var dateLoadTime: Date?
@@ -38,9 +37,10 @@ class ViewController: UIViewController {
         labelLoaded.isHidden = true
         labelSummary.isHidden = true
         labelNet.isHidden = true
-        labelNetUsage.isHidden = true
+        imageDay.isHidden = true
+        imageMonth.isHidden = true
         buttonRefresh.isEnabled = false
-        
+
         dateLoadTime = Date()
         let timestamp = String(format:"%.0f", (dateLoadTime?.timeIntervalSince1970)!)
 
@@ -49,8 +49,11 @@ class ViewController: UIViewController {
             self.jsonFromURL(urlString: "https://solar.thegrebs.com/day/" + latestDate + ".json") { (json) in
 
                 self.labelTitle.text = json["date_str"].stringValue
-                self.labelSummary.text = "Today, generated " + String(format:"%.3f", json["tot_solar"].floatValue )
-                    + " kWh, used " + String(format:"%.3f", json["tot_used"].floatValue) + "kWh."
+                self.labelSummary.text =
+                      "\tGenerated: " + String(format:"%.3f", json["tot_solar"].floatValue ) + " kWh\n"
+                    + "\tConsumed: " + String(format:"%.3f", json["tot_used"].floatValue) + "kWh\n"
+                    + "\tNet:"
+                
 
                 self.labelSummary.isHidden = false
                 
@@ -63,7 +66,6 @@ class ViewController: UIViewController {
                     self.labelNet.textColor = UIColor.black
                 }
                 self.labelNet.isHidden = false
-                self.labelNetUsage.isHidden = false
 
                 self.labelLoaded.text = "Refreshed at " + self.timeFormatter.string(from: self.dateLoadTime!)
                 self.labelLoaded.isHidden = false
@@ -73,8 +75,12 @@ class ViewController: UIViewController {
             }
             
             let yearMonth = latestDate[..<latestDate.index(latestDate.startIndex, offsetBy: 7)]
-            self.imageDay.imageFromUrl(urlString: "https://solar.thegrebs.com/graphs/" + latestDate + "?" + timestamp) {}
-            self.imageMonth.imageFromUrl(urlString: "https://solar.thegrebs.com/graphs/" + yearMonth + "?" + timestamp) {}
+            self.imageDay.imageFromUrl(urlString: "https://solar.thegrebs.com/graphs/" + latestDate + "?" + timestamp) {
+                self.imageDay.isHidden = false
+            }
+            self.imageMonth.imageFromUrl(urlString: "https://solar.thegrebs.com/graphs/" + yearMonth + "?" + timestamp) {
+                self.imageMonth.isHidden = false
+            }
         }
     }
     
@@ -98,6 +104,11 @@ class ViewController: UIViewController {
                 DispatchQueue.main.async {
                     let json = JSON(data)
                     whenDone(json)
+                }
+            }
+            else {
+                DispatchQueue.main.async {
+                    self.buttonRefresh.isEnabled = true
                 }
             }
         }.resume()
